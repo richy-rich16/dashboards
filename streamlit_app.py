@@ -2,40 +2,45 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# Sample data
+# Sample pipeline data
 np.random.seed(42)
 dates = pd.date_range(start="2025-07-01", periods=30)
 
-df = pd.DataFrame({
+pipeline_df = pd.DataFrame({
     "date": dates,
-    "valid_isin_pct": np.random.uniform(95, 100, len(dates)),
-    "sla_met": np.random.uniform(90, 100, len(dates)),
-    "dup_records": np.random.randint(10, 80, len(dates)),
-    "null_errors": np.random.randint(5, 20, len(dates)),
-    "format_errors": np.random.randint(2, 10, len(dates)),
-    "vendor_conflicts": np.random.randint(1, 15, len(dates)),
+    "jobs_run": np.random.randint(80, 150, len(dates)),
+    "success_rate": np.random.uniform(90, 100, len(dates)),
+    "avg_time": np.random.uniform(5, 12, len(dates)),
+    "records_processed": np.random.randint(5_000_000, 15_000_000, len(dates)),
+    "validation_errors": np.random.randint(0, 20, len(dates)),
+    "schema_errors": np.random.randint(0, 10, len(dates)),
+    "connectivity_errors": np.random.randint(0, 5, len(dates)),
+    "timeout_errors": np.random.randint(0, 8, len(dates)),
+    "sla_breaches": np.random.randint(0, 3, len(dates))
 })
 
-# Dashboard layout
+# Layout
 st.set_page_config(layout="wide")
-st.title("📊 Data Stewardship Performance Dashboard")
+st.title("⚙️ Pipeline Performance Dashboard")
 
-# KPIs
-col1, col2, col3 = st.columns(3)
-col1.metric("ISIN Validity %", f"{df.valid_isin_pct.iloc[-1]:.2f}%")
-col2.metric("SLA Compliance %", f"{df.sla_met.iloc[-1]:.2f}%")
-col3.metric("Duplicate Records Today", df.dup_records.iloc[-1])
+# KPI cards
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Jobs Run Today", pipeline_df.jobs_run.iloc[-1])
+col2.metric("Success Rate", f"{pipeline_df.success_rate.iloc[-1]:.2f}%")
+col3.metric("Avg Processing Time", f"{pipeline_df.avg_time.iloc[-1]:.1f} min")
+col4.metric("Records Processed", f"{pipeline_df.records_processed.iloc[-1]/1_000_000:.1f}M")
 
-# Line Charts
-st.subheader("Quality Trends Over Time")
-st.line_chart(df.set_index("date")[["valid_isin_pct", "sla_met"]])
+# Trends
+st.subheader("Pipeline Status Trends")
+st.line_chart(pipeline_df.set_index("date")[["success_rate"]])
+st.bar_chart(pipeline_df.set_index("date")[["avg_time"]])
 
-# Error Breakdown
-st.subheader("Error Distribution")
-errors_df = df[["null_errors", "format_errors", "vendor_conflicts"]].sum().reset_index()
+# Errors
+st.subheader("Error Types Breakdown")
+errors_df = pipeline_df[["validation_errors", "schema_errors", "connectivity_errors", "timeout_errors"]].sum().reset_index()
 errors_df.columns = ["ErrorType", "Count"]
 st.bar_chart(errors_df.set_index("ErrorType"))
 
-# Duplicates Over Time
-st.subheader("Duplicate Records Over Time")
-st.bar_chart(df.set_index("date")[["dup_records"]])
+# SLA monitoring
+st.subheader("SLA Breaches Over Time")
+st.bar_chart(pipeline_df.set_index("date")[["sla_breaches"]])
